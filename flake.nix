@@ -9,23 +9,34 @@
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { self, nixpkgs, nix-darwin, home-manager }@inputs:
-  let
-    system = "aarch64-darwin";
-    pkgs = import nixpkgs { inherit system; };
-    host = import ./host.nix;
-  in
-  {
-    darwinConfigurations.${host.hostname} = nix-darwin.lib.darwinSystem {
-      inherit pkgs;
-      specialArgs = { inherit host; };
-      modules = [ ./darwin.nix ];
+  outputs =
+    {
+      self,
+      nixpkgs,
+      nix-darwin,
+      home-manager,
+    }@inputs:
+    let
+      system = "aarch64-darwin";
+      pkgs = import nixpkgs {
+        inherit system;
+        config.allowUnfreePredicate = (
+          pkg: builtins.elem (pkg.pname or (builtins.parseDrvName pkg.name).name) [ "vscode" ]
+        );
+      };
+      host = import ./host.nix { inherit pkgs; };
+    in
+    {
+      darwinConfigurations.${host.hostname} = nix-darwin.lib.darwinSystem {
+        inherit pkgs;
+        specialArgs = { inherit host; };
+        modules = [ ./darwin.nix ];
+      };
+
+      homeConfigurations.${host.username} = home-manager.lib.homeManagerConfiguration {
+        inherit pkgs;
+        extraSpecialArgs = { inherit host; };
+        modules = [ ./home.nix ];
+      };
     };
-    
-    homeConfigurations.${host.username} = home-manager.lib.homeManagerConfiguration {
-      inherit pkgs;
-      extraSpecialArgs = { inherit host; };
-      modules = [ ./home.nix ];
-    };
-  };
 }

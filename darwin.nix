@@ -1,4 +1,10 @@
-{ config, pkgs, host, ...}: {
+{
+  config,
+  pkgs,
+  host,
+  ...
+}:
+{
 
   nix.settings.experimental-features = [
     "nix-command"
@@ -6,50 +12,40 @@
   ];
 
   users.users.${host.username} = {
-    home = host.home;
+    home = builtins.toString host.home;
     shell = pkgs.fish;
   };
-  
+
   environment = {
-    systemPackages = with pkgs; [
-      fish
-      vim
-      wget
-    ];
+    systemPackages =
+      with pkgs;
+      [
+        fish
+      ]
+      ++ host.systemPackages;
 
     shells = with pkgs; [
       fish
-    ]; 
+    ];
   };
-  
+
   programs.fish.enable = true;
-  
+
   homebrew = {
     enable = true;
 
     taps = [
-      "cirruslabs/cli"
-      "felixkratz/formulae"
-      "nikitabobko/tap"
-    ];
+    ]
+    ++ host.homebrew.taps;
 
     brews = [
-      "cirruslabs/cli/tart"
-      "felixkratz/formulae/borders"
-    ];
-    
+    ]
+    ++ host.homebrew.brews;
+
     casks = [
-      "appcleaner"
-      "arc"
-      "ghostty"
-      "font-jetbrains-mono"
-      "font-jetbrains-mono-nerd-font"
-      "font-lilex-nerd-font"
-      "nikitabobko/tap/aerospace"
-      "raycast"
-      "zed"
-    ];
-    
+    ]
+    ++ host.homebrew.casks;
+
     onActivation = {
       autoUpdate = true;
       upgrade = true;
@@ -59,7 +55,7 @@
 
   system = {
     primaryUser = host.username;
-    
+
     defaults = {
       dock = {
         autohide = true;
@@ -76,7 +72,7 @@
         KeyRepeat = 2;
         InitialKeyRepeat = 15;
       };
-    }; 
+    };
 
     stateVersion = 6;
   };

@@ -1,33 +1,36 @@
-{ config, pkgs, host, lib, ... }: {
+{
+  config,
+  pkgs,
+  host,
+  lib,
+  ...
+}:
+{
   home = {
     username = host.username;
 
-    homeDirectory = host.home;
+    homeDirectory = builtins.toString host.home;
 
     stateVersion = "25.11";
-    
-    packages = with pkgs; [
-      bat
-      fd
-      fzf
-      gh
-      git
-      jq
-      ncdu
-      neovim
-      pueue
-      ripgrep
-      starship
-      stow
-      tree
-      zellij
-      zoxide
-    ];
 
-    activation.stowDotfiles = lib.hm.dag.entryAfter["writeBoundary"] ''
-      echo "Running stow to link dotfiles..."
-      cd ${config.home.homeDirectory}/dotfiles
-      ${pkgs.stow}/bin/stow --dotfiles aerospace fish ghostty starship zed zellij
+    packages =
+      with pkgs;
+      [
+      ]
+      ++ host.userPackages;
+
+    activation.stowDotfiles = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      export PATH="/opt/homebrew/bin:$PATH"
+      echo "Installing Visual Studio Code extensions ..."
+      for ext in ${lib.concatStringsSep " " host.vscodeExtensions}; do
+      	code --force --install-extension "$ext"
+      done
+      cd ${builtins.toString host.dotfilesDirectory}
+      echo "Running dotfiles helper script ..."
+      ${pkgs.stow}/bin/stow -t ~ --dotfiles -D ${lib.concatStringsSep " " host.stowManagedApps}
+      bash helper.sh ${lib.concatStringsSep " " host.stowManagedApps}
+      echo "Running stow ..."
+      ${pkgs.stow}/bin/stow -t ~ --dotfiles ${lib.concatStringsSep " " host.stowManagedApps}
       echo " Config files were symlinked"
     '';
   };
